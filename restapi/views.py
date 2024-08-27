@@ -1,11 +1,10 @@
 from unicodedata import category
 
-from django.forms import model_to_dict
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from restapi import models
+from restapi import models, serializers
 
 
 # Create your views here.
@@ -14,19 +13,14 @@ from restapi import models
 class ExpenseListCreate(APIView):
     def get(self, request):
         expenses = models.Expense.objects.all()
+        serializer = serializers.Expense(expenses, many=True)
 
-        all_expenses = [model_to_dict(expense) for expense in expenses]
-
-        return Response(all_expenses, status=200)
+        return Response(serializer.data, status=200)
 
     def post(self, request):
-        amount = request.data["amount"]
-        merchant = request.data["merchant"]
-        description = request.data["description"]
-        category = request.data["category"]
+        serializer = serializers.Expense(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        expense = models.Expense.objects.create(
-            amount=amount, merchant=merchant, description=description, category=category
-        )
+        serializer.save()
 
-        return Response(model_to_dict(expense), status=201)
+        return Response(serializer.data, status=201)
